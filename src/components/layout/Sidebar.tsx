@@ -17,30 +17,19 @@ import {
 import { GoogleUser } from '../../types/auth';
 
 interface SidebarProps {
-  currentView: 'dashboard' | 'brain' | 'settings';
-  onViewChange: (view: 'dashboard' | 'brain' | 'settings') => void;
+  currentView: 'dashboard' | 'brain' | 'settings' | 'leadtrack';
+  onViewChange: (view: 'dashboard' | 'brain' | 'settings' | 'leadtrack') => void;
   user?: GoogleUser;
   onLogout?: () => void;
 }
 
-const apps = [
+// External apps that open in new window
+const externalApps = [
   {
     id: 'show-sync',
     name: 'Show Sync',
     icon: Calendar,
     url: 'https://script.google.com/macros/s/AKfycbxIIaIOJNVEXxfjdQOEOzox8wwqrGYn1HEiea5Fp5bUQ2w5YurZISCuxe7P0nJV3nI/exec',
-  },
-  {
-    id: 'leadtrack',
-    name: 'LeadTrack',
-    icon: Users,
-    url: 'https://vrcgoutreach.vercel.app',
-  },
-  {
-    id: 'squarespace',
-    name: 'Squarespace',
-    icon: Globe,
-    url: 'https://mauve-semicircle-alth.squarespace.com/config/',
   },
 ];
 
@@ -74,6 +63,12 @@ const sheets = [
     name: 'YouTube Studio',
     icon: Youtube,
     url: 'https://studio.youtube.com/channel/UCy-TipxZKkpeH6kit3PpS-A/videos/upload?filter=%5B%5D&sort=%7B%22columnType%22%3A%22date%22%2C%22sortOrder%22%3A%22DESCENDING%22%7D',
+  },
+  {
+    id: 'squarespace',
+    name: 'Squarespace',
+    icon: Globe,
+    url: 'https://mauve-semicircle-alth.squarespace.com/config/',
   },
 ];
 
@@ -125,7 +120,22 @@ export function Sidebar({ currentView, onViewChange, user, onLogout }: SidebarPr
           <p className="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
             Apps
           </p>
-          {apps.map((app) => (
+
+          {/* LeadTrack - embedded */}
+          <button
+            onClick={() => onViewChange('leadtrack')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-colors ${
+              currentView === 'leadtrack'
+                ? 'bg-slate-800 text-slate-50'
+                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span className="font-medium">LeadTrack</span>
+          </button>
+
+          {/* External apps */}
+          {externalApps.map((app) => (
             <a
               key={app.id}
               href={app.url}

@@ -18,7 +18,7 @@ import { loadSettings, saveSettings } from './services/settingsService';
 import { getStoredAuth, storeAuth, clearAuth } from './services/authService';
 import { Loader2 } from 'lucide-react';
 
-type View = 'dashboard' | 'brain' | 'settings';
+type View = 'dashboard' | 'brain' | 'settings' | 'leadtrack';
 
 function App() {
   // Auth state
@@ -217,6 +217,16 @@ function App() {
             captures={captures}
             onCapture={handleCapture}
             onSearch={handleSearch}
+          />
+        </div>
+      )}
+      {currentView === 'leadtrack' && (
+        <div className="h-[calc(100vh-5rem)] -m-6">
+          <iframe
+            src="https://vrcgoutreach.vercel.app"
+            className="w-full h-full border-0"
+            title="LeadTrack"
+            allow="clipboard-write"
           />
         </div>
       )}

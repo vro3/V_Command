@@ -12,6 +12,7 @@
   "dependencies": {
     "@google/genai": "^0.14.0",
     "@vercel/kv": "^2.0.0",
+    "googleapis": "^168.0.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

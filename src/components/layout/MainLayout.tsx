@@ -14,8 +14,8 @@ interface MainLayoutProps {
   children: ReactNode;
   title: string;
   stats?: HeaderStats;
-  currentView: 'dashboard' | 'brain' | 'settings';
-  onViewChange: (view: 'dashboard' | 'brain' | 'settings') => void;
+  currentView: 'dashboard' | 'brain' | 'settings' | 'leadtrack';
+  onViewChange: (view: 'dashboard' | 'brain' | 'settings' | 'leadtrack') => void;
   brainSidebar?: ReactNode;
   user?: GoogleUser;
   onLogout?: () => void;

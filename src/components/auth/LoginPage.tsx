@@ -88,16 +88,10 @@ export function LoginPage({ error }: LoginPageProps) {
             <span>{isLoading ? 'Connecting...' : 'Sign in with Google'}</span>
           </button>
 
-          {/* Allowed Accounts Note */}
-          <div className="mt-6 pt-4 border-t border-slate-800">
-            <p className="text-[11px] text-slate-600 text-center">
-              Authorized accounts only
-            </p>
-            <div className="flex flex-col items-center gap-1 mt-2">
-              <span className="text-[10px] text-slate-500">vince@vinceromanelli.com</span>
-              <span className="text-[10px] text-slate-500">vr@vrcreativegroup.com</span>
-            </div>
-          </div>
+          {/* Authorized Access Note */}
+          <p className="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-600 text-center">
+            Authorized accounts only
+          </p>
         </div>
 
         {/* Footer */}
