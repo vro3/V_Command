@@ -35,7 +35,7 @@ export function CaptureCard({ capture, onDelete, onCopy, compact = false }: Capt
 
   if (compact) {
     return (
-      <div className="bg-slate-900/50 border border-slate-800 squircle-sm p-3 hover:border-slate-700 transition-colors cursor-pointer group">
+      <div className="bg-slate-900/50 border border-slate-800 btn-squircle p-3 hover:border-slate-700 transition-colors cursor-pointer group">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <span className={`text-[10px] font-medium uppercase tracking-wider ${categoryInfo.color}`}>
             {categoryInfo.label}
@@ -79,7 +79,7 @@ export function CaptureCard({ capture, onDelete, onCopy, compact = false }: Capt
           {capture.tags.map((tag) => (
             <span
               key={tag}
-              className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full"
+              className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 btn-squircle"
             >
               {tag}
             </span>
@@ -105,7 +105,7 @@ export function CaptureCard({ capture, onDelete, onCopy, compact = false }: Capt
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={handleCopy}
-            className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded transition-colors"
+            className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-slate-800 btn-squircle transition-colors"
             title="Copy content"
           >
             <Copy className="w-3.5 h-3.5" />
@@ -113,7 +113,7 @@ export function CaptureCard({ capture, onDelete, onCopy, compact = false }: Capt
           {onDelete && (
             <button
               onClick={() => onDelete(capture.id)}
-              className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
+              className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 btn-squircle transition-colors"
               title="Delete"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -121,7 +121,7 @@ export function CaptureCard({ capture, onDelete, onCopy, compact = false }: Capt
           )}
         </div>
 
-        <button className="p-1.5 text-slate-600 hover:text-slate-400 hover:bg-slate-800 rounded transition-colors opacity-0 group-hover:opacity-100">
+        <button className="p-1.5 text-slate-600 hover:text-slate-400 hover:bg-slate-800 btn-squircle transition-colors opacity-0 group-hover:opacity-100">
           <MoreHorizontal className="w-3.5 h-3.5" />
         </button>
       </div>

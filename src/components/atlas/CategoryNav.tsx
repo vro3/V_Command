@@ -38,7 +38,7 @@ export function CategoryNav({ selectedCategory, onSelectCategory, counts }: Cate
       {/* All */}
       <button
         onClick={() => onSelectCategory('all')}
-        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors ${
+        className={`w-full flex items-center justify-between px-3 py-2 btn-squircle text-[13px] transition-colors ${
           selectedCategory === 'all'
             ? 'bg-slate-800 text-slate-100'
             : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-300'
@@ -60,7 +60,7 @@ export function CategoryNav({ selectedCategory, onSelectCategory, counts }: Cate
           <button
             key={category}
             onClick={() => onSelectCategory(category)}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors ${
+            className={`w-full flex items-center justify-between px-3 py-2 btn-squircle text-[13px] transition-colors ${
               selectedCategory === category
                 ? 'bg-slate-800 text-slate-100'
                 : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-300'

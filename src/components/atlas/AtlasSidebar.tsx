@@ -39,10 +39,10 @@ export function AtlasSidebar({ captures, onClose, onDeleteCapture }: AtlasSideba
     <>
       {/* Header */}
       <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-        <h2 className="text-[15px] font-semibold text-slate-100">Atlas Library</h2>
+        <h2 className="text-[15px] font-semibold text-slate-100">Brain Library</h2>
         <button
           onClick={onClose}
-          className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+          className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 btn-squircle transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -57,7 +57,7 @@ export function AtlasSidebar({ captures, onClose, onDeleteCapture }: AtlasSideba
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search captures..."
-            className="w-full pl-9 pr-4 py-2 text-[13px] bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            className="w-full pl-9 pr-4 py-2 text-[13px] bg-slate-800/50 border border-slate-700 input-squircle text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
           />
         </div>
       </div>

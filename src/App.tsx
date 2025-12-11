@@ -11,11 +11,11 @@ import {
   searchCaptures,
 } from './services/atlasService';
 
-type View = 'dashboard' | 'atlas';
+type View = 'dashboard' | 'brain';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [atlasOpen, setAtlasOpen] = useState(false);
+  const [brainOpen, setBrainOpen] = useState(false);
   const [captures, setCaptures] = useState<Capture[]>([]);
 
   // Load captures from localStorage on mount
@@ -31,43 +31,43 @@ function App() {
     }
   }, [captures]);
 
-  // Keyboard shortcut for Atlas (Cmd+J)
+  // Keyboard shortcut for Brain (Cmd+J)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'j') {
         e.preventDefault();
-        setAtlasOpen((prev) => !prev);
-        if (!atlasOpen) {
-          setCurrentView('atlas');
+        setBrainOpen((prev) => !prev);
+        if (!brainOpen) {
+          setCurrentView('brain');
         }
       }
-      // Cmd+K for search (just opens Atlas for now)
+      // Cmd+K for search (just opens Brain for now)
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setAtlasOpen(true);
-        setCurrentView('atlas');
+        setBrainOpen(true);
+        setCurrentView('brain');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [atlasOpen]);
+  }, [brainOpen]);
 
   const handleViewChange = (view: View) => {
     setCurrentView(view);
-    if (view === 'atlas') {
-      setAtlasOpen(true);
+    if (view === 'brain') {
+      setBrainOpen(true);
     }
   };
 
-  const handleOpenAtlas = () => {
-    setCurrentView('atlas');
-    setAtlasOpen(true);
+  const handleOpenBrain = () => {
+    setCurrentView('brain');
+    setBrainOpen(true);
   };
 
-  const handleCloseAtlas = () => {
-    setAtlasOpen(false);
-    if (currentView === 'atlas') {
+  const handleCloseBrain = () => {
+    setBrainOpen(false);
+    if (currentView === 'brain') {
       setCurrentView('dashboard');
     }
   };
@@ -104,8 +104,8 @@ function App() {
     switch (currentView) {
       case 'dashboard':
         return 'Command Center';
-      case 'atlas':
-        return 'Atlas';
+      case 'brain':
+        return 'Brain';
       default:
         return 'V_Command';
     }
@@ -115,7 +115,7 @@ function App() {
     switch (currentView) {
       case 'dashboard':
         return 'Your unified workspace';
-      case 'atlas':
+      case 'brain':
         return `${captures.length} captures`;
       default:
         return '';
@@ -128,17 +128,17 @@ function App() {
       subtitle={getSubtitle()}
       currentView={currentView}
       onViewChange={handleViewChange}
-      atlasOpen={atlasOpen}
-      atlasSidebar={
+      brainOpen={brainOpen}
+      brainSidebar={
         <AtlasSidebar
           captures={captures}
-          onClose={handleCloseAtlas}
+          onClose={handleCloseBrain}
           onDeleteCapture={handleDeleteCapture}
         />
       }
     >
-      {currentView === 'dashboard' && <Dashboard onOpenAtlas={handleOpenAtlas} />}
-      {currentView === 'atlas' && (
+      {currentView === 'dashboard' && <Dashboard onOpenBrain={handleOpenBrain} />}
+      {currentView === 'brain' && (
         <div className="h-[calc(100vh-8rem)] max-w-4xl mx-auto">
           <AtlasChat
             captures={captures}

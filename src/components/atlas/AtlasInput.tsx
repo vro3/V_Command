@@ -64,7 +64,7 @@ export function AtlasInput({ onSubmit, isProcessing, placeholder }: AtlasInputPr
         <div className="absolute right-2 bottom-2 flex items-center gap-1">
           {/* URL indicator */}
           {/^https?:\/\//.test(content.trim()) && (
-            <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded mr-1">
+            <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 btn-squircle mr-1">
               URL
             </span>
           )}
@@ -72,7 +72,7 @@ export function AtlasInput({ onSubmit, isProcessing, placeholder }: AtlasInputPr
           {/* Image paste button */}
           <button
             type="button"
-            className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-700 btn-squircle transition-colors"
             title="Paste image"
           >
             <Image className="w-4 h-4" />
@@ -82,7 +82,7 @@ export function AtlasInput({ onSubmit, isProcessing, placeholder }: AtlasInputPr
           <button
             type="button"
             onClick={handleVoiceClick}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 btn-squircle transition-colors ${
               isRecording
                 ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
                 : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'

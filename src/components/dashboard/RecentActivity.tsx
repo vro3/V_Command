@@ -44,7 +44,7 @@ function formatTime(timestamp: string): string {
 
 export function RecentActivity({ activities }: RecentActivityProps) {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+    <div className="bg-slate-900/50 border border-slate-800 card-squircle overflow-hidden">
       <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
         <Clock className="w-4 h-4 text-slate-500" />
         <h3 className="text-[13px] font-semibold text-slate-200">Recent Activity</h3>
@@ -67,7 +67,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center ${colorClass}`}
+                    className={`mt-0.5 w-7 h-7 icon-squircle flex items-center justify-center ${colorClass}`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </div>

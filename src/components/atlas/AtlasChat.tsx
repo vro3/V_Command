@@ -15,7 +15,7 @@ export function AtlasChat({ onCapture, onSearch }: AtlasChatProps) {
     {
       id: '1',
       role: 'assistant',
-      content: "I'm Atlas, your knowledge capture assistant. Paste or type anything — ideas, notes, contacts, links — and I'll organize it for you. You can also ask me questions about things you've captured.",
+      content: "I'm Brain, your knowledge capture assistant. Paste or type anything — ideas, notes, contacts, links — and I'll organize it for you. You can also ask me questions about things you've captured.",
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -106,7 +106,7 @@ export function AtlasChat({ onCapture, onSearch }: AtlasChatProps) {
             className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}
           >
             {message.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 icon-squircle bg-accent/10 flex items-center justify-center flex-shrink-0">
                 <Brain className="w-4 h-4 text-accent" />
               </div>
             )}
@@ -117,7 +117,7 @@ export function AtlasChat({ onCapture, onSearch }: AtlasChatProps) {
               }`}
             >
               <div
-                className={`rounded-xl px-4 py-3 ${
+                className={`btn-squircle px-4 py-3 ${
                   message.role === 'user'
                     ? 'bg-accent text-slate-950'
                     : 'bg-slate-800/50 border border-slate-700'
@@ -163,7 +163,7 @@ export function AtlasChat({ onCapture, onSearch }: AtlasChatProps) {
             </div>
 
             {message.role === 'user' && (
-              <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 icon-squircle bg-slate-700 flex items-center justify-center flex-shrink-0">
                 <User className="w-4 h-4 text-slate-300" />
               </div>
             )}
@@ -172,10 +172,10 @@ export function AtlasChat({ onCapture, onSearch }: AtlasChatProps) {
 
         {isProcessing && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+            <div className="w-8 h-8 icon-squircle bg-accent/10 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-accent animate-pulse" />
             </div>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3">
+            <div className="bg-slate-800/50 border border-slate-700 btn-squircle px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-accent rounded-full animate-bounce" />
                 <div

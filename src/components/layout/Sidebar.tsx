@@ -11,9 +11,9 @@ import {
 } from 'lucide-react';
 
 interface SidebarProps {
-  currentView: 'dashboard' | 'atlas';
-  onViewChange: (view: 'dashboard' | 'atlas') => void;
-  atlasOpen: boolean;
+  currentView: 'dashboard' | 'brain';
+  onViewChange: (view: 'dashboard' | 'brain') => void;
+  brainOpen: boolean;
 }
 
 const apps = [
@@ -43,7 +43,7 @@ const apps = [
   },
 ];
 
-export function Sidebar({ currentView, onViewChange, atlasOpen }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, brainOpen }: SidebarProps) {
   return (
     <aside className="w-60 bg-slate-950 border-r border-slate-800 flex flex-col fixed h-full z-10">
       {/* Logo */}
@@ -73,18 +73,18 @@ export function Sidebar({ currentView, onViewChange, atlasOpen }: SidebarProps) 
         </button>
 
         <button
-          onClick={() => onViewChange('atlas')}
+          onClick={() => onViewChange('brain')}
           className={`w-full flex items-center gap-3 px-3 py-2.5 btn-squircle text-[13px] transition-colors ${
-            currentView === 'atlas' || atlasOpen
+            currentView === 'brain' || brainOpen
               ? 'bg-accent-subtle text-accent border border-accent/20'
               : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
           }`}
         >
           <Brain className="w-4 h-4" />
-          <span className="font-medium">Atlas</span>
+          <span className="font-medium">Brain</span>
           <ChevronRight
             className={`w-3.5 h-3.5 ml-auto transition-transform ${
-              atlasOpen ? 'rotate-90' : ''
+              brainOpen ? 'rotate-90' : ''
             }`}
           />
         </button>

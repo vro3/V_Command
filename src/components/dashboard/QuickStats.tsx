@@ -20,7 +20,7 @@ export function QuickStats({ stats }: QuickStatsProps) {
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="bg-slate-900/50 border border-slate-800 rounded-lg p-4"
+          className="bg-slate-900/50 border border-slate-800 card-squircle p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             <stat.icon className="w-4 h-4 text-slate-500" />
