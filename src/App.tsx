@@ -10,9 +10,11 @@ import { AppSettings } from './types/settings';
 import { AuthData, isAllowedUser } from './types/auth';
 import {
   loadCaptures,
+  loadCapturesFromCloud,
   saveCaptures,
   processCapture,
   searchCaptures,
+  deleteFromCloud,
 } from './services/atlasService';
 import { loadSettings, saveSettings } from './services/settingsService';
 import { getStoredAuth, storeAuth, clearAuth } from './services/authService';
@@ -91,11 +93,21 @@ function App() {
     initAuth();
   }, []);
 
-  // Load captures from localStorage on mount
+  // Load captures from cloud (with localStorage fallback) when authenticated
   useEffect(() => {
-    const stored = loadCaptures();
-    setCaptures(stored);
-  }, []);
+    if (authData) {
+      // Load from local cache immediately for fast UI
+      const cached = loadCaptures();
+      setCaptures(cached);
+
+      // Then sync from cloud in background
+      loadCapturesFromCloud().then((cloudCaptures) => {
+        if (cloudCaptures.length > 0 || cached.length === 0) {
+          setCaptures(cloudCaptures);
+        }
+      });
+    }
+  }, [authData]);
 
   // Handle settings save
   const handleSaveSettings = useCallback((newSettings: AppSettings) => {
@@ -143,6 +155,8 @@ function App() {
 
   const handleDeleteCapture = useCallback((id: string) => {
     setCaptures((prev) => prev.filter((c) => c.id !== id));
+    // Also delete from cloud
+    deleteFromCloud(id);
   }, []);
 
   const handleAddToLeadTrack = useCallback((capture: Capture) => {

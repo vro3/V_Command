@@ -1,8 +1,12 @@
 import { Capture, Category, ContentType, LeadData, ShowData, TaskData } from '../types/atlas';
+import { getStoredAuth } from './authService';
 
 const STORAGE_KEY = 'v_command_captures';
+const SYNC_DEBOUNCE_MS = 2000; // Wait 2 seconds before syncing to cloud
 
-// Local storage helpers
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Local storage helpers (used as cache)
 export function loadCaptures(): Capture[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -13,7 +17,104 @@ export function loadCaptures(): Capture[] {
 }
 
 export function saveCaptures(captures: Capture[]): void {
+  // Save to localStorage immediately (cache)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(captures));
+
+  // Debounce cloud sync
+  if (syncTimeout) {
+    clearTimeout(syncTimeout);
+  }
+
+  syncTimeout = setTimeout(() => {
+    syncCapturesToCloud(captures);
+  }, SYNC_DEBOUNCE_MS);
+}
+
+// Cloud sync functions
+async function getAuthToken(): Promise<string | null> {
+  const auth = getStoredAuth();
+  if (!auth?.tokens) return null;
+
+  // Encode tokens as base64 for API
+  return btoa(JSON.stringify(auth.tokens));
+}
+
+export async function loadCapturesFromCloud(): Promise<Capture[]> {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      console.log('No auth token, using local storage only');
+      return loadCaptures();
+    }
+
+    const response = await fetch('/api/brain/captures', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to load from cloud, using local cache');
+      return loadCaptures();
+    }
+
+    const data = await response.json();
+    const cloudCaptures = data.captures || [];
+
+    // Update local cache
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudCaptures));
+
+    return cloudCaptures;
+  } catch (error) {
+    console.error('Error loading from cloud:', error);
+    return loadCaptures();
+  }
+}
+
+async function syncCapturesToCloud(captures: Capture[]): Promise<void> {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      console.log('No auth token, skipping cloud sync');
+      return;
+    }
+
+    const response = await fetch('/api/brain/captures', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ captures }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to sync to cloud');
+    } else {
+      console.log('Captures synced to cloud');
+    }
+  } catch (error) {
+    console.error('Error syncing to cloud:', error);
+  }
+}
+
+export async function deleteFromCloud(captureId: string): Promise<void> {
+  try {
+    const token = await getAuthToken();
+    if (!token) return;
+
+    await fetch('/api/brain/captures', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ id: captureId }),
+    });
+  } catch (error) {
+    console.error('Error deleting from cloud:', error);
+  }
 }
 
 // Generate unique ID
