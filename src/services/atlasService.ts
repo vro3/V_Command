@@ -151,6 +151,7 @@ export async function processCapture(
       tags: result.tags,
       entities: result.entities || [],
       context: result.context || 'personal',
+      suggestedActions: result.suggestedActions || [],
       leadData: result.leadData,
       showData: result.showData,
       taskData: result.taskData,

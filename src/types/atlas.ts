@@ -53,6 +53,15 @@ export interface TaskData {
   relatedTo?: string;
 }
 
+// Suggested action from AI
+export interface SuggestedAction {
+  type: 'add_to_leadtrack' | 'add_to_showsync' | 'send_email' | 'schedule_followup' | 'create_task' | 'add_to_calendar' | 'research' | 'call' | 'none';
+  label: string;
+  description?: string;
+  priority: 'high' | 'medium' | 'low';
+  data?: Record<string, string>; // Pre-filled data for the action
+}
+
 export interface Capture {
   id: string;
   userId: string;
@@ -67,6 +76,9 @@ export interface Capture {
   tags: string[];
   entities: Entity[];
   context: CaptureContext;
+
+  // AI-Suggested actions
+  suggestedActions?: SuggestedAction[];
 
   // Structured data (populated based on category)
   leadData?: LeadData;

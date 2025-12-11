@@ -159,6 +159,57 @@ function App() {
     deleteFromCloud(id);
   }, []);
 
+  const handleEditCapture = useCallback(
+    async (id: string, newContent: string) => {
+      // Find the capture and reprocess with new content
+      const capture = captures.find((c) => c.id === id);
+      if (!capture) return;
+
+      setIsProcessing(true);
+      try {
+        const updatedCapture = await processCapture(newContent, capture.contentType);
+        // Keep the original ID and createdAt
+        setCaptures((prev) =>
+          prev.map((c) =>
+            c.id === id
+              ? { ...updatedCapture, id, createdAt: capture.createdAt }
+              : c
+          )
+        );
+      } catch (error) {
+        console.error('Failed to reprocess capture:', error);
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [captures]
+  );
+
+  const handleReprocessCapture = useCallback(
+    async (id: string) => {
+      const capture = captures.find((c) => c.id === id);
+      if (!capture) return;
+
+      setIsProcessing(true);
+      try {
+        const updatedCapture = await processCapture(capture.rawContent, capture.contentType);
+        // Keep the original ID and createdAt
+        setCaptures((prev) =>
+          prev.map((c) =>
+            c.id === id
+              ? { ...updatedCapture, id, createdAt: capture.createdAt }
+              : c
+          )
+        );
+      } catch (error) {
+        console.error('Failed to reprocess capture:', error);
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [captures]
+  );
+
   const handleAddToLeadTrack = useCallback((capture: Capture) => {
     // Mark capture as added to LeadTrack
     setCaptures((prev) =>
@@ -219,6 +270,8 @@ function App() {
           captures={captures}
           onCapture={handleCapture}
           onDeleteCapture={handleDeleteCapture}
+          onEditCapture={handleEditCapture}
+          onReprocessCapture={handleReprocessCapture}
           onAddToLeadTrack={handleAddToLeadTrack}
           isProcessing={isProcessing}
         />
