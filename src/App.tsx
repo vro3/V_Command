@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MainLayout } from './components/layout/MainLayout';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { AtlasChat } from './components/atlas/AtlasChat';
-import { AtlasSidebar } from './components/atlas/AtlasSidebar';
+import { BrainSidebar } from './components/atlas/BrainSidebar';
 import { Capture } from './types/atlas';
 import {
   loadCaptures,
@@ -15,8 +15,8 @@ type View = 'dashboard' | 'brain';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [brainOpen, setBrainOpen] = useState(false);
   const [captures, setCaptures] = useState<Capture[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Load captures from localStorage on mount
   useEffect(() => {
@@ -31,45 +31,8 @@ function App() {
     }
   }, [captures]);
 
-  // Keyboard shortcut for Brain (Cmd+J)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'j') {
-        e.preventDefault();
-        setBrainOpen((prev) => !prev);
-        if (!brainOpen) {
-          setCurrentView('brain');
-        }
-      }
-      // Cmd+K for search (just opens Brain for now)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setBrainOpen(true);
-        setCurrentView('brain');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [brainOpen]);
-
   const handleViewChange = (view: View) => {
     setCurrentView(view);
-    if (view === 'brain') {
-      setBrainOpen(true);
-    }
-  };
-
-  const handleOpenBrain = () => {
-    setCurrentView('brain');
-    setBrainOpen(true);
-  };
-
-  const handleCloseBrain = () => {
-    setBrainOpen(false);
-    if (currentView === 'brain') {
-      setCurrentView('dashboard');
-    }
   };
 
   const handleCapture = useCallback(
@@ -77,6 +40,7 @@ function App() {
       content: string,
       type: 'text' | 'url' | 'voice'
     ): Promise<Capture | null> => {
+      setIsProcessing(true);
       try {
         const newCapture = await processCapture(content, type);
         setCaptures((prev) => [newCapture, ...prev]);
@@ -84,6 +48,8 @@ function App() {
       } catch (error) {
         console.error('Failed to capture:', error);
         return null;
+      } finally {
+        setIsProcessing(false);
       }
     },
     []
@@ -100,44 +66,30 @@ function App() {
     setCaptures((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  const getTitle = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return 'Command Center';
-      case 'brain':
-        return 'Brain';
-      default:
-        return 'V_Command';
-    }
-  };
-
-  const getSubtitle = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return 'Your unified workspace';
-      case 'brain':
-        return `${captures.length} captures`;
-      default:
-        return '';
-    }
+  // Stats for header
+  const stats = {
+    captures: captures.length,
+    shows: '—',
+    leads: '—',
+    thisWeek: '—',
   };
 
   return (
     <MainLayout
-      title={getTitle()}
-      subtitle={getSubtitle()}
+      title="Command Center"
+      stats={stats}
       currentView={currentView}
       onViewChange={handleViewChange}
-      brainOpen={brainOpen}
       brainSidebar={
-        <AtlasSidebar
+        <BrainSidebar
           captures={captures}
-          onClose={handleCloseBrain}
+          onCapture={handleCapture}
           onDeleteCapture={handleDeleteCapture}
+          isProcessing={isProcessing}
         />
       }
     >
-      {currentView === 'dashboard' && <Dashboard onOpenBrain={handleOpenBrain} />}
+      {currentView === 'dashboard' && <Dashboard />}
       {currentView === 'brain' && (
         <div className="h-[calc(100vh-8rem)] max-w-4xl mx-auto">
           <AtlasChat
