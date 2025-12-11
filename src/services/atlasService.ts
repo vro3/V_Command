@@ -72,7 +72,6 @@ function createSmartFallbackCapture(
   contentType: ContentType,
   userId: string
 ): Capture {
-  const lowerContent = content.toLowerCase();
   let category: Category = 'notes';
   let context: 'business' | 'personal' = 'personal';
   let leadData: LeadData | undefined;

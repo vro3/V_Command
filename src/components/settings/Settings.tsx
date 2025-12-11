@@ -57,10 +57,6 @@ export function Settings({ settings, onSave }: SettingsProps) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const getModelsForProvider = (provider: AIProvider) => {
-    return AVAILABLE_MODELS.filter((m) => m.provider === provider);
-  };
-
   const getAvailableModelsForTask = () => {
     // Only show models from providers that have API keys configured
     const availableProviders: AIProvider[] = [];
