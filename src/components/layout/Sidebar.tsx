@@ -17,14 +17,20 @@ import {
 import { GoogleUser } from '../../types/auth';
 
 interface SidebarProps {
-  currentView: 'dashboard' | 'brain' | 'settings' | 'leadtrack';
-  onViewChange: (view: 'dashboard' | 'brain' | 'settings' | 'leadtrack') => void;
+  currentView: 'dashboard' | 'brain' | 'settings';
+  onViewChange: (view: 'dashboard' | 'brain' | 'settings') => void;
   user?: GoogleUser;
   onLogout?: () => void;
 }
 
 // External apps that open in new window
 const externalApps = [
+  {
+    id: 'leadtrack',
+    name: 'LeadTrack',
+    icon: Users,
+    url: 'https://vrcgoutreach.vercel.app',
+  },
   {
     id: 'show-sync',
     name: 'Show Sync',
@@ -120,19 +126,6 @@ export function Sidebar({ currentView, onViewChange, user, onLogout }: SidebarPr
           <p className="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
             Apps
           </p>
-
-          {/* LeadTrack - embedded */}
-          <button
-            onClick={() => onViewChange('leadtrack')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-colors ${
-              currentView === 'leadtrack'
-                ? 'bg-slate-800 text-slate-50'
-                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span className="font-medium">LeadTrack</span>
-          </button>
 
           {/* External apps */}
           {externalApps.map((app) => (
