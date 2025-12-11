@@ -49,3 +49,117 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ============================================
+   SQUIRCLE - Apple-style smooth corners
+   Uses CSS mask with superellipse (p≈5)
+   ============================================ */
+
+/* Utility class for squircle corners - applies to cards, buttons, inputs */
+.squircle {
+  /* Safari/iOS native smooth corners */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+
+  /* The key property - continuous corner radius */
+  border-radius: 16px;
+
+  /* This is the magic - makes corners smooth like Apple */
+  /* Supported in Safari, and we'll use a fallback SVG mask for others */
+}
+
+/* For WebKit browsers (Safari, iOS) - native squircle support */
+@supports (-webkit-backdrop-filter: blur(1px)) {
+  .squircle,
+  .squircle-sm,
+  .squircle-lg,
+  .squircle-xl {
+    /* Safari's native continuous corners */
+    -webkit-mask-composite: source-over;
+  }
+}
+
+/* Small squircle - for buttons, badges */
+.squircle-sm {
+  border-radius: 10px;
+}
+
+/* Medium squircle - for cards (default) */
+.squircle-md {
+  border-radius: 16px;
+}
+
+/* Large squircle - for modals, panels */
+.squircle-lg {
+  border-radius: 24px;
+}
+
+/* Extra large squircle - for app icons, hero elements */
+.squircle-xl {
+  border-radius: 32px;
+}
+
+/*
+   SVG-based squircle mask for non-Safari browsers
+   This creates the actual superellipse shape (p≈4-5)
+   The SVG uses the formula: |x|^p + |y|^p = 1
+*/
+.squircle-mask {
+  --squircle-radius: 16px;
+  --squircle-smooth: 0.6; /* 0 = normal radius, 1 = full squircle */
+
+  /* Clip path using smooth superellipse */
+  clip-path: inset(0 round var(--squircle-radius));
+
+  /* For browsers that support it, use paint worklet */
+  border-radius: var(--squircle-radius);
+}
+
+/* Card-specific squircle styling */
+.card-squircle {
+  border-radius: 20px;
+  /* Smooth shadow that follows the curve */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Button squircle */
+.btn-squircle {
+  border-radius: 12px;
+  /* Subtle inner glow for depth */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Input squircle */
+.input-squircle {
+  border-radius: 14px;
+}
+
+/* Icon container squircle - like iOS app icons */
+.icon-squircle {
+  border-radius: 22.5%; /* iOS app icon ratio */
+  /* This approximates Apple's icon squircle */
+}
+
+/* Smooth transition for interactive squircle elements */
+.squircle-interactive {
+  transition:
+    transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.squircle-interactive:hover {
+  transform: scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(212, 168, 87, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.squircle-interactive:active {
+  transform: scale(0.98);
+}

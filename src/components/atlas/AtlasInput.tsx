@@ -58,7 +58,7 @@ export function AtlasInput({ onSubmit, isProcessing, placeholder }: AtlasInputPr
           placeholder={placeholder || "Paste or type anything... ideas, notes, links, contacts"}
           disabled={isProcessing}
           rows={1}
-          className="w-full resize-none bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 pr-24 text-[13px] text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors disabled:opacity-50"
+          className="w-full resize-none bg-slate-800/50 border border-slate-700 input-squircle px-4 py-3 pr-24 text-[13px] text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors disabled:opacity-50"
         />
 
         <div className="absolute right-2 bottom-2 flex items-center gap-1">
@@ -97,7 +97,7 @@ export function AtlasInput({ onSubmit, isProcessing, placeholder }: AtlasInputPr
             type="button"
             onClick={handleSubmit}
             disabled={!content.trim() || isProcessing}
-            className="p-2 bg-accent text-slate-950 rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 bg-accent text-slate-950 btn-squircle hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing ? (
               <Loader2 className="w-4 h-4 animate-spin" />

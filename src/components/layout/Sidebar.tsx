@@ -49,7 +49,7 @@ export function Sidebar({ currentView, onViewChange, atlasOpen }: SidebarProps) 
       {/* Logo */}
       <div className="px-5 py-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-accent to-accent-hover rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-gradient-to-br from-accent to-accent-hover icon-squircle flex items-center justify-center">
             <span className="text-base font-bold text-slate-950">V</span>
           </div>
           <span className="text-[15px] font-bold text-slate-50 tracking-tight">
@@ -62,7 +62,7 @@ export function Sidebar({ currentView, onViewChange, atlasOpen }: SidebarProps) 
       <nav className="flex-1 p-3 space-y-1">
         <button
           onClick={() => onViewChange('dashboard')}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] transition-colors ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 btn-squircle text-[13px] transition-colors ${
             currentView === 'dashboard'
               ? 'bg-slate-800 text-slate-50'
               : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
@@ -74,7 +74,7 @@ export function Sidebar({ currentView, onViewChange, atlasOpen }: SidebarProps) 
 
         <button
           onClick={() => onViewChange('atlas')}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] transition-colors ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 btn-squircle text-[13px] transition-colors ${
             currentView === 'atlas' || atlasOpen
               ? 'bg-accent-subtle text-accent border border-accent/20'
               : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'

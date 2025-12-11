@@ -29,11 +29,11 @@ export function AppCard({
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 hover:border-accent/50 hover:bg-slate-900/70 transition-all duration-200 cursor-pointer group block"
+      className="bg-slate-900/50 border border-slate-800 p-5 hover:border-accent/50 hover:bg-slate-900/70 cursor-pointer group block card-squircle squircle-interactive"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 ${bgColor} rounded-xl flex items-center justify-center`}>
+          <div className={`w-11 h-11 ${bgColor} icon-squircle flex items-center justify-center`}>
             <Icon className={`w-5 h-5 ${iconColor}`} />
           </div>
           <div>

@@ -35,7 +35,7 @@ export function CaptureCard({ capture, onDelete, onCopy, compact = false }: Capt
 
   if (compact) {
     return (
-      <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-3 hover:border-slate-700 transition-colors cursor-pointer group">
+      <div className="bg-slate-900/50 border border-slate-800 squircle-sm p-3 hover:border-slate-700 transition-colors cursor-pointer group">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <span className={`text-[10px] font-medium uppercase tracking-wider ${categoryInfo.color}`}>
             {categoryInfo.label}
@@ -50,7 +50,7 @@ export function CaptureCard({ capture, onDelete, onCopy, compact = false }: Capt
   }
 
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-colors group">
+    <div className="bg-slate-900/50 border border-slate-800 card-squircle p-4 hover:border-slate-700 transition-colors group">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
