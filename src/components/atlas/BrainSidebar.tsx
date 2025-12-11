@@ -9,10 +9,11 @@ interface BrainSidebarProps {
   captures: Capture[];
   onCapture: (content: string, type: 'text' | 'url' | 'voice') => Promise<Capture | null>;
   onDeleteCapture: (id: string) => void;
+  onAddToLeadTrack?: (capture: Capture) => void;
   isProcessing: boolean;
 }
 
-export function BrainSidebar({ captures, onCapture, onDeleteCapture, isProcessing }: BrainSidebarProps) {
+export function BrainSidebar({ captures, onCapture, onDeleteCapture, onAddToLeadTrack, isProcessing }: BrainSidebarProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCategories, setShowCategories] = useState(false);
@@ -133,6 +134,7 @@ export function BrainSidebar({ captures, onCapture, onDeleteCapture, isProcessin
               key={capture.id}
               capture={capture}
               onDelete={onDeleteCapture}
+              onAddToLeadTrack={onAddToLeadTrack}
               compact
             />
           ))

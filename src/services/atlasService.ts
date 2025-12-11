@@ -1,4 +1,4 @@
-import { Capture, Category, ContentType } from '../types/atlas';
+import { Capture, Category, ContentType, LeadData, ShowData, TaskData } from '../types/atlas';
 
 const STORAGE_KEY = 'v_command_captures';
 
@@ -49,6 +49,10 @@ export async function processCapture(
       category: result.category,
       tags: result.tags,
       entities: result.entities || [],
+      context: result.context || 'personal',
+      leadData: result.leadData,
+      showData: result.showData,
+      taskData: result.taskData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       source: contentType === 'url' ? content : undefined,
@@ -58,41 +62,132 @@ export async function processCapture(
   } catch (error) {
     console.error('Error processing capture:', error);
     // Fallback to local processing if API fails
-    return createFallbackCapture(content, contentType, userId);
+    return createSmartFallbackCapture(content, contentType, userId);
   }
 }
 
-// Fallback when API is unavailable
-function createFallbackCapture(
+// Smart fallback with lead/show/task detection
+function createSmartFallbackCapture(
   content: string,
   contentType: ContentType,
   userId: string
 ): Capture {
-  // Simple heuristics for category detection
+  const lowerContent = content.toLowerCase();
   let category: Category = 'notes';
+  let context: 'business' | 'personal' = 'personal';
+  let leadData: LeadData | undefined;
+  let showData: ShowData | undefined;
+  let taskData: TaskData | undefined;
 
-  if (contentType === 'url') {
-    category = 'bookmarks';
-  } else if (/\b(todo|task|need to|must|should|reminder)\b/i.test(content)) {
+  // Extract patterns
+  const emailMatch = content.match(/[\w.-]+@[\w.-]+\.\w+/);
+  const phoneMatch = content.match(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/);
+  const websiteMatch = content.match(/(?:https?:\/\/)?(?:www\.)?[\w-]+\.\w{2,}(?:\/\S*)?/i);
+  const moneyMatch = content.match(/\$[\d,]+(?:k)?|\d+k|\d{4,}(?:\s*dollars)?/i);
+  const dateMatch = content.match(/(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?/i);
+
+  // Lead detection - potential business contact/client
+  const leadKeywords = /\b(lead|prospect|client|contact|reach out|follow up|inquiry|interested|event planner|conference|corporate|booking|book|dmcs?|agency|production)\b/i;
+  const companyIndicators = /\b(inc|llc|corp|company|group|enterprises|international|hotels?|marriott|hilton|hyatt|sheraton|conference|convention|event)\b/i;
+
+  if (leadKeywords.test(content) || (emailMatch && companyIndicators.test(content)) ||
+      (websiteMatch && companyIndicators.test(content))) {
+    category = 'leads';
+    context = 'business';
+
+    // Extract lead data
+    const nameMatch = content.match(/(?:contact|name|person|with|from)[\s:]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
+    const companyMatch = content.match(/(?:company|at|from|for)[\s:]+([A-Z][A-Za-z\s&]+?)(?:\s+(?:inc|llc|corp|,|\.|$))/i);
+
+    leadData = {
+      name: nameMatch?.[1],
+      company: companyMatch?.[1]?.trim(),
+      email: emailMatch?.[0],
+      phone: phoneMatch?.[0],
+      website: websiteMatch?.[0],
+      eventDate: dateMatch?.[0],
+      budget: moneyMatch?.[0],
+      notes: content.slice(0, 200),
+    };
+  }
+  // Show detection - booking/performance related
+  else if (/\b(show|gig|performance|booking|confirmed|luminadrums|dj drums|drumline|aurora corps|ai amplification|event|venue)\b/i.test(content) &&
+           (dateMatch || moneyMatch)) {
+    category = 'shows';
+    context = 'business';
+
+    // Determine status
+    let status: ShowData['status'] = 'inquiry';
+    if (/confirmed|booked|signed/i.test(content)) status = 'confirmed';
+    else if (/quote|proposal|sent/i.test(content)) status = 'quoted';
+    else if (/complete|done|finished/i.test(content)) status = 'completed';
+
+    showData = {
+      client: content.match(/(?:for|at|with)\s+([A-Z][A-Za-z\s&]+?)(?:\s+(?:on|in|$))/i)?.[1]?.trim(),
+      showType: content.match(/\b(luminadrums|dj drums|hot stickin|drumline|aurora corps|ai amplification|karaoke|vince the dj)\b/i)?.[0],
+      date: dateMatch?.[0],
+      fee: moneyMatch?.[0],
+      status,
+    };
+  }
+  // Task detection
+  else if (/\b(todo|task|need to|must|should|reminder|follow up|don't forget|remember to|call|email|send|schedule)\b/i.test(content)) {
     category = 'tasks';
-  } else if (/\b(idea|thought|what if|maybe|could)\b/i.test(content)) {
-    category = 'ideas';
-  } else if (/\b(meeting|call|schedule|agenda)\b/i.test(content)) {
+    context = companyIndicators.test(content) ? 'business' : 'personal';
+
+    let priority: TaskData['priority'] = 'medium';
+    if (/\b(urgent|asap|immediately|critical|important)\b/i.test(content)) priority = 'high';
+    else if (/\b(whenever|eventually|someday|low priority)\b/i.test(content)) priority = 'low';
+
+    taskData = {
+      title: content.split(/[.!?\n]/)[0].slice(0, 100),
+      dueDate: dateMatch?.[0],
+      priority,
+    };
+  }
+  // URL/Bookmark
+  else if (contentType === 'url') {
+    category = 'bookmarks';
+    context = companyIndicators.test(content) ? 'business' : 'personal';
+  }
+  // Meeting
+  else if (/\b(meeting|call|schedule|agenda|zoom|teams)\b/i.test(content)) {
     category = 'meetings';
-  } else if (/@|email|phone|\d{3}[-.]?\d{3}[-.]?\d{4}/.test(content)) {
+    context = companyIndicators.test(content) ? 'business' : 'personal';
+  }
+  // Idea
+  else if (/\b(idea|thought|what if|maybe|could|concept|brainstorm)\b/i.test(content)) {
+    category = 'ideas';
+  }
+  // Contact
+  else if (emailMatch || phoneMatch) {
     category = 'contacts';
-  } else if (/["'].*["']|said|quote/i.test(content)) {
+    context = companyIndicators.test(content) ? 'business' : 'personal';
+  }
+  // Quote
+  else if (/["'].*["']|said|quote/i.test(content)) {
     category = 'quotes';
   }
 
-  // Extract simple tags from content
+  // Extract hashtags as tags
   const tags: string[] = [];
-  const words = content.split(/\s+/);
-  words.forEach((word) => {
-    if (word.startsWith('#') && word.length > 1) {
-      tags.push(word.slice(1).toLowerCase());
-    }
-  });
+  const hashtagMatches = content.match(/#[\w]+/g);
+  if (hashtagMatches) {
+    hashtagMatches.forEach((tag) => tags.push(tag.slice(1).toLowerCase()));
+  }
+
+  // Auto-add business tags
+  if (context === 'business') {
+    if (category === 'leads') tags.push('lead');
+    if (category === 'shows') tags.push('show');
+  }
+
+  // Extract entities
+  const entities = [];
+  if (emailMatch) entities.push({ type: 'email' as const, value: emailMatch[0], confidence: 1 });
+  if (phoneMatch) entities.push({ type: 'phone' as const, value: phoneMatch[0], confidence: 1 });
+  if (moneyMatch) entities.push({ type: 'money' as const, value: moneyMatch[0], confidence: 0.8 });
+  if (dateMatch) entities.push({ type: 'date' as const, value: dateMatch[0], confidence: 0.8 });
 
   return {
     id: generateId(),
@@ -102,7 +197,11 @@ function createFallbackCapture(
     summary: content.length > 200 ? content.slice(0, 197) + '...' : content,
     category,
     tags: tags.slice(0, 5),
-    entities: [],
+    entities,
+    context,
+    leadData,
+    showData,
+    taskData,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     source: contentType === 'url' ? content : undefined,
@@ -150,6 +249,16 @@ export function searchCaptures(captures: Capture[], query: string): Capture[] {
           score += 7;
         }
       });
+
+      // Check structured data
+      if (capture.leadData) {
+        const leadStr = JSON.stringify(capture.leadData).toLowerCase();
+        if (leadStr.includes(lowerQuery)) score += 8;
+      }
+      if (capture.showData) {
+        const showStr = JSON.stringify(capture.showData).toLowerCase();
+        if (showStr.includes(lowerQuery)) score += 8;
+      }
 
       return { capture, score };
     })

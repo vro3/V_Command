@@ -8,13 +8,17 @@ import {
   Bookmark,
   Calendar,
   Folder,
+  Target,
+  Music,
   LucideIcon,
 } from 'lucide-react';
 import { Category, CATEGORY_INFO } from '../../types/atlas';
 
 const categoryIcons: Record<Category, LucideIcon> = {
-  ideas: Lightbulb,
+  leads: Target,
+  shows: Music,
   tasks: CheckSquare,
+  ideas: Lightbulb,
   contacts: Users,
   notes: FileText,
   reference: BookOpen,

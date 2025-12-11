@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { GoogleUser } from '../../types/auth';
 
 interface HeaderStats {
   captures: number;
@@ -13,9 +14,11 @@ interface MainLayoutProps {
   children: ReactNode;
   title: string;
   stats?: HeaderStats;
-  currentView: 'dashboard' | 'brain';
-  onViewChange: (view: 'dashboard' | 'brain') => void;
+  currentView: 'dashboard' | 'brain' | 'settings';
+  onViewChange: (view: 'dashboard' | 'brain' | 'settings') => void;
   brainSidebar?: ReactNode;
+  user?: GoogleUser;
+  onLogout?: () => void;
 }
 
 export function MainLayout({
@@ -25,6 +28,8 @@ export function MainLayout({
   currentView,
   onViewChange,
   brainSidebar,
+  user,
+  onLogout,
 }: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-base flex">
@@ -32,6 +37,8 @@ export function MainLayout({
       <Sidebar
         currentView={currentView}
         onViewChange={onViewChange}
+        user={user}
+        onLogout={onLogout}
       />
 
       {/* Main Content */}
