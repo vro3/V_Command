@@ -133,7 +133,13 @@ function App() {
     ): Promise<Capture | null> => {
       setIsProcessing(true);
       try {
-        const newCapture = await processCapture(content, type);
+        const newCapture = await processCapture(
+          content,
+          type,
+          'default',
+          settings.brainRules,
+          settings.brainMemories
+        );
         setCaptures((prev) => [newCapture, ...prev]);
         return newCapture;
       } catch (error) {
@@ -143,7 +149,7 @@ function App() {
         setIsProcessing(false);
       }
     },
-    []
+    [settings.brainRules, settings.brainMemories]
   );
 
   const handleSearch = useCallback(
@@ -167,7 +173,13 @@ function App() {
 
       setIsProcessing(true);
       try {
-        const updatedCapture = await processCapture(newContent, capture.contentType);
+        const updatedCapture = await processCapture(
+          newContent,
+          capture.contentType,
+          'default',
+          settings.brainRules,
+          settings.brainMemories
+        );
         // Keep the original ID and createdAt
         setCaptures((prev) =>
           prev.map((c) =>
@@ -182,7 +194,7 @@ function App() {
         setIsProcessing(false);
       }
     },
-    [captures]
+    [captures, settings.brainRules, settings.brainMemories]
   );
 
   const handleReprocessCapture = useCallback(
@@ -192,7 +204,13 @@ function App() {
 
       setIsProcessing(true);
       try {
-        const updatedCapture = await processCapture(capture.rawContent, capture.contentType);
+        const updatedCapture = await processCapture(
+          capture.rawContent,
+          capture.contentType,
+          'default',
+          settings.brainRules,
+          settings.brainMemories
+        );
         // Keep the original ID and createdAt
         setCaptures((prev) =>
           prev.map((c) =>
@@ -207,7 +225,7 @@ function App() {
         setIsProcessing(false);
       }
     },
-    [captures]
+    [captures, settings.brainRules, settings.brainMemories]
   );
 
   const handleAddToLeadTrack = useCallback((capture: Capture) => {

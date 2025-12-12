@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Key, Eye, EyeOff, Check, AlertCircle, Cpu, Zap, Brain, PenLine } from 'lucide-react';
+import { Key, Eye, EyeOff, Check, AlertCircle, Cpu, Zap, Brain, PenLine, BookOpen, Trash2, Plus, Lightbulb } from 'lucide-react';
 import {
   AppSettings,
   AVAILABLE_MODELS,
   AIModel,
   AIProvider,
+  BrainMemory,
+  DEFAULT_BRAIN_RULES,
 } from '../../types/settings';
 
 interface SettingsProps {
@@ -13,13 +15,18 @@ interface SettingsProps {
 }
 
 export function Settings({ settings, onSave }: SettingsProps) {
-  const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
+  const [localSettings, setLocalSettings] = useState<AppSettings>({
+    ...settings,
+    brainRules: settings.brainRules || DEFAULT_BRAIN_RULES,
+    brainMemories: settings.brainMemories || [],
+  });
   const [showKeys, setShowKeys] = useState<Record<AIProvider, boolean>>({
     gemini: false,
     claude: false,
     openai: false,
   });
   const [saved, setSaved] = useState(false);
+  const [newMemory, setNewMemory] = useState('');
 
   const handleApiKeyChange = (provider: AIProvider, value: string) => {
     setLocalSettings((prev) => ({
@@ -47,6 +54,56 @@ export function Settings({ settings, onSave }: SettingsProps) {
     setLocalSettings((prev) => ({
       ...prev,
       brainMode: mode,
+    }));
+    setSaved(false);
+  };
+
+  const handleRulesChange = (rules: string) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      brainRules: {
+        ...prev.brainRules,
+        customRules: rules,
+      },
+    }));
+    setSaved(false);
+  };
+
+  const handleHighPriorityKeywordsChange = (keywords: string) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      brainRules: {
+        ...prev.brainRules,
+        priorityKeywords: {
+          ...prev.brainRules.priorityKeywords,
+          high: keywords.split(',').map(k => k.trim()).filter(Boolean),
+        },
+      },
+    }));
+    setSaved(false);
+  };
+
+  const handleAddMemory = () => {
+    if (!newMemory.trim()) return;
+
+    const memory: BrainMemory = {
+      id: Date.now().toString(),
+      content: newMemory.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setLocalSettings((prev) => ({
+      ...prev,
+      brainMemories: [memory, ...prev.brainMemories],
+    }));
+    setNewMemory('');
+    setSaved(false);
+  };
+
+  const handleDeleteMemory = (id: string) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      brainMemories: prev.brainMemories.filter(m => m.id !== id),
     }));
     setSaved(false);
   };
@@ -306,6 +363,125 @@ export function Settings({ settings, onSave }: SettingsProps) {
             </button>
           ))}
         </div>
+      </section>
+
+      {/* Brain Rules Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Lightbulb className="w-4 h-4 text-amber-400" />
+          <h2 className="text-[15px] font-semibold text-slate-200">Brain Rules</h2>
+        </div>
+
+        <p className="text-[12px] text-slate-500">
+          Define rules that Brain always follows. Write in plain English.
+        </p>
+
+        <div className="p-4 bg-slate-900/50 border border-slate-800 rounded-xl space-y-4">
+          {/* Custom Rules */}
+          <div>
+            <label className="block text-[12px] font-medium text-slate-400 mb-2">
+              Your Rules
+            </label>
+            <textarea
+              value={localSettings.brainRules?.customRules || ''}
+              onChange={(e) => handleRulesChange(e.target.value)}
+              placeholder="Example rules:
+- Marriott leads are always high priority
+- Shows under $1500 are low priority
+- Always suggest follow-up for venue inquiries
+- DMC contacts should go to both LeadTrack AND ShowSync"
+              rows={6}
+              className="w-full px-3 py-2 text-[13px] bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+            />
+          </div>
+
+          {/* High Priority Keywords */}
+          <div>
+            <label className="block text-[12px] font-medium text-slate-400 mb-2">
+              High Priority Keywords <span className="text-slate-500">(comma separated)</span>
+            </label>
+            <input
+              type="text"
+              value={localSettings.brainRules?.priorityKeywords?.high?.join(', ') || ''}
+              onChange={(e) => handleHighPriorityKeywordsChange(e.target.value)}
+              placeholder="Marriott, urgent, ASAP, corporate"
+              className="w-full px-3 py-2 text-[13px] bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+            />
+            <p className="text-[10px] text-slate-600 mt-1">
+              Any capture mentioning these words will be marked as high priority
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Brain Memory Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-purple-400" />
+          <h2 className="text-[15px] font-semibold text-slate-200">Brain Memory</h2>
+        </div>
+
+        <p className="text-[12px] text-slate-500">
+          Things you've told Brain to remember. Add facts, preferences, or context.
+        </p>
+
+        {/* Add Memory */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMemory}
+            onChange={(e) => setNewMemory(e.target.value)}
+            placeholder="Remember: My standard corporate rate is $2500..."
+            onKeyDown={(e) => e.key === 'Enter' && handleAddMemory()}
+            className="flex-1 px-3 py-2 text-[13px] bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+          />
+          <button
+            onClick={handleAddMemory}
+            disabled={!newMemory.trim()}
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg text-[13px] font-medium hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
+        </div>
+
+        {/* Memory List */}
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {localSettings.brainMemories?.length === 0 ? (
+            <div className="p-4 bg-slate-900/50 border border-slate-800 border-dashed rounded-xl text-center">
+              <p className="text-[12px] text-slate-500">No memories yet</p>
+              <p className="text-[10px] text-slate-600 mt-1">
+                Add things like pricing, preferences, important clients
+              </p>
+            </div>
+          ) : (
+            localSettings.brainMemories?.map((memory) => (
+              <div
+                key={memory.id}
+                className="p-3 bg-slate-900/50 border border-slate-800 rounded-lg flex items-start gap-3 group"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] text-slate-300">{memory.content}</p>
+                  <p className="text-[10px] text-slate-600 mt-1">
+                    {new Date(memory.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDeleteMemory(memory.id)}
+                  className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {localSettings.brainMemories && localSettings.brainMemories.length > 0 && (
+          <p className="text-[10px] text-slate-600">
+            {localSettings.brainMemories.length} memories stored • These are injected into every Brain analysis
+          </p>
+        )}
       </section>
 
       {/* Save Button */}

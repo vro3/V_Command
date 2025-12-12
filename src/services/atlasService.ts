@@ -1,5 +1,6 @@
 import { Capture, Category, ContentType, LeadData, ShowData, TaskData } from '../types/atlas';
 import { getStoredAuth } from './authService';
+import { BrainRules, BrainMemory } from '../types/settings';
 
 const STORAGE_KEY = 'v_command_captures';
 const SYNC_DEBOUNCE_MS = 2000; // Wait 2 seconds before syncing to cloud
@@ -126,13 +127,15 @@ function generateId(): string {
 export async function processCapture(
   content: string,
   contentType: ContentType,
-  userId: string = 'default'
+  userId: string = 'default',
+  brainRules?: BrainRules,
+  brainMemories?: BrainMemory[]
 ): Promise<Capture> {
   try {
     const response = await fetch('/api/atlas/capture', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, contentType }),
+      body: JSON.stringify({ content, contentType, brainRules, brainMemories }),
     });
 
     if (!response.ok) {
@@ -146,15 +149,25 @@ export async function processCapture(
       userId,
       rawContent: content,
       contentType,
+      // New conversational Brain fields
+      response: result.response,
+      simpleType: result.type,
+      dueDate: result.dueDate,
+      reminderDate: result.reminderDate,
+      timeContext: result.timeContext,
+      mentions: result.mentions,
+      needsAction: result.needsAction,
+      suggestedAction: result.suggestedAction,
+      // Legacy fields (still populated for backward compat)
       summary: result.summary,
       category: result.category,
       tags: result.tags,
       entities: result.entities || [],
-      context: result.context || 'personal',
-      suggestedActions: result.suggestedActions || [],
-      leadData: result.leadData,
-      showData: result.showData,
-      taskData: result.taskData,
+      context: result.context || 'business',
+      urgency: result.urgency,
+      destination: result.destination,
+      intentType: result.intentType,
+      primaryAction: result.primaryAction,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       source: contentType === 'url' ? content : undefined,

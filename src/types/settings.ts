@@ -89,11 +89,62 @@ export interface ModelAssignments {
   writing: AIModel;         // emails, proposals
 }
 
+// Brain Memory - things you tell it to remember
+export interface BrainMemory {
+  id: string;
+  content: string;
+  createdAt: string;
+  source?: string; // Optional: what triggered this memory
+}
+
+// Brain Rules - predefined rules that always apply
+export interface BrainRules {
+  // Plain text rules the user writes
+  customRules: string;
+
+  // Priority overrides
+  priorityKeywords: {
+    high: string[];    // e.g., ["Marriott", "urgent", "ASAP"]
+    low: string[];     // e.g., ["someday", "maybe", "FYI"]
+  };
+
+  // Default behaviors
+  defaults: {
+    newLeadAction: 'add_to_leadtrack' | 'send_quote' | 'research' | 'none';
+    showInquiryAction: 'add_to_showsync' | 'send_quote' | 'none';
+    followUpDays: number; // Default follow-up reminder days
+  };
+}
+
 export interface AppSettings {
   apiKeys: APIKeys;
   models: ModelAssignments;
   brainMode: 'business' | 'personal' | 'all';
+
+  // NEW: Brain intelligence
+  brainRules: BrainRules;
+  brainMemories: BrainMemory[];
 }
+
+export const DEFAULT_BRAIN_RULES: BrainRules = {
+  customRules: `- "Submit an Offer" or "requested to Submit an Offer" = PROPOSAL SUBMITTED (not a lead, not a show yet)
+- These come from booking platforms (GigSalad, The Bash) - I don't know who the client is yet
+- Route to: archive (just tracking for date conflicts, no action needed)
+- Urgency: fyi (no action required)
+- Extract: event date, event name, platform source
+- Tag with: proposal-pending
+- Purpose: Track dates I've pitched so I don't double-book or overlap
+- These only become real leads/shows if the client accepts the offer`,
+  priorityKeywords: {
+    high: [],
+    low: ['Submit an Offer', 'requested to Submit an Offer'],
+  },
+  defaults: {
+    newLeadAction: 'add_to_leadtrack',
+    showInquiryAction: 'add_to_showsync',
+    followUpDays: 3,
+  },
+};
 
 export const DEFAULT_SETTINGS: AppSettings = {
   apiKeys: {},
@@ -103,4 +154,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     writing: 'gemini-3-pro',
   },
   brainMode: 'all',
+  brainRules: DEFAULT_BRAIN_RULES,
+  brainMemories: [],
 };

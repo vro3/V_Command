@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Mail, Plus } from 'lucide-react';
+import { Mail, UserPlus } from 'lucide-react';
 import { RecentActivity } from './RecentActivity';
 import { ShowSyncWidget } from './ShowSyncWidget';
 import { EmailComposer } from './EmailComposer';
+import { LeadCapture } from './LeadCapture';
 
 // Sample activities - these would be fetched from your apps
 const recentActivities = [
@@ -18,6 +19,7 @@ const recentActivities = [
 
 export function Dashboard() {
   const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -30,15 +32,13 @@ export function Dashboard() {
           <Mail className="w-4 h-4" />
           New Email
         </button>
-        <a
-          href="https://docs.google.com/spreadsheets/d/16zVv27wNPiO2XwNkMkJpSTMX8iSiJdPn10vY5Ab1DD8/edit"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => setShowLeadCapture(true)}
           className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-300 rounded-lg text-[13px] font-medium transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <UserPlus className="w-4 h-4" />
           New Lead
-        </a>
+        </button>
       </div>
 
       {/* Activity & Data Section */}
@@ -52,6 +52,14 @@ export function Dashboard() {
         <EmailComposer
           onClose={() => setShowEmailComposer(false)}
           onSent={() => console.log('Email sent!')}
+        />
+      )}
+
+      {/* Lead Capture Modal */}
+      {showLeadCapture && (
+        <LeadCapture
+          onClose={() => setShowLeadCapture(false)}
+          onAdded={() => console.log('Lead added to CRM!')}
         />
       )}
     </div>

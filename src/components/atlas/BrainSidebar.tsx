@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Brain, Search, Filter, X } from 'lucide-react';
+import { Brain, Search, Filter, X, BookOpen } from 'lucide-react';
 import { AtlasInput } from './AtlasInput';
 import { CategoryNav } from './CategoryNav';
 import { CaptureCard } from './CaptureCard';
+import { DeepResearch } from './DeepResearch';
 import { Capture, Category, CATEGORY_INFO } from '../../types/atlas';
 
 interface BrainSidebarProps {
@@ -19,6 +20,8 @@ export function BrainSidebar({ captures, onCapture, onDeleteCapture, onEditCaptu
   const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCategories, setShowCategories] = useState(false);
+  const [showDeepResearch, setShowDeepResearch] = useState(false);
+  const [deepResearchQuery, setDeepResearchQuery] = useState('');
 
   // Calculate category counts
   const counts = captures.reduce(
@@ -45,14 +48,35 @@ export function BrainSidebar({ captures, onCapture, onDeleteCapture, onEditCaptu
     await onCapture(content, type);
   };
 
+  const handleResearchAction = (query: string) => {
+    setDeepResearchQuery(query);
+    setShowDeepResearch(true);
+  };
+
+  const handleSaveResearch = async (report: string, query: string) => {
+    // Save the research report as a capture
+    const formattedContent = `Research Report: ${query}\n\n${report}`;
+    await onCapture(formattedContent, 'text');
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-2">
         <Brain className="w-4 h-4 text-accent" />
         <h2 className="text-[15px] font-semibold text-slate-100">Brain</h2>
-        <span className="text-[11px] text-slate-500 ml-auto tabular-nums">
-          {captures.length} captures
+        <button
+          onClick={() => {
+            setDeepResearchQuery('');
+            setShowDeepResearch(true);
+          }}
+          className="ml-auto p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg transition-colors"
+          title="Deep Research"
+        >
+          <BookOpen className="w-4 h-4" />
+        </button>
+        <span className="text-[11px] text-slate-500 tabular-nums">
+          {captures.length}
         </span>
       </div>
 
@@ -139,11 +163,21 @@ export function BrainSidebar({ captures, onCapture, onDeleteCapture, onEditCaptu
               onEdit={onEditCapture}
               onReprocess={onReprocessCapture}
               onAddToLeadTrack={onAddToLeadTrack}
+              onResearch={handleResearchAction}
               compact
             />
           ))
         )}
       </div>
+
+      {/* Deep Research Modal */}
+      {showDeepResearch && (
+        <DeepResearch
+          onClose={() => setShowDeepResearch(false)}
+          onSaveToCaptures={handleSaveResearch}
+          initialQuery={deepResearchQuery}
+        />
+      )}
     </div>
   );
 }

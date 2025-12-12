@@ -1,119 +1,101 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 
+// Simplified schema for conversational assistant
 const responseSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    // Conversational response - how Brain acknowledges this
+    response: {
+      type: Type.STRING,
+      description: 'Short, conversational acknowledgment (e.g., "Got it, I\'ll remind you Tuesday" or "Saved that idea")',
+    },
+
+    // What Brain understood
     summary: {
       type: Type.STRING,
-      description: 'A concise 1-2 sentence summary of the content',
+      description: 'Brief summary of what this is about',
     },
-    category: {
+
+    // Simple type - not forced categories
+    type: {
       type: Type.STRING,
-      enum: [
-        'leads',
-        'shows',
-        'ideas',
-        'tasks',
-        'contacts',
-        'notes',
-        'reference',
-        'quotes',
-        'bookmarks',
-        'meetings',
-        'projects',
-      ],
-      description: 'The best category for this content',
+      enum: ['task', 'reminder', 'idea', 'note', 'contact', 'show', 'lead', 'reference'],
+      description: 'Simple type for filtering',
     },
-    context: {
+
+    // Time-awareness - THE KEY FEATURE
+    dueDate: {
       type: Type.STRING,
-      enum: ['business', 'personal'],
-      description: 'Whether this is business or personal content',
+      description: 'If there\'s a deadline or "by X date" mentioned, extract it as ISO date string (YYYY-MM-DD). null if no deadline.',
     },
+    reminderDate: {
+      type: Type.STRING,
+      description: 'When to remind about this (ISO date). For "call John Tuesday" = Tuesday morning. null if no reminder needed.',
+    },
+    timeContext: {
+      type: Type.STRING,
+      description: 'Human-readable time context (e.g., "by Tuesday", "next week", "February 26th", "no deadline")',
+    },
+
+    // People/things mentioned - for linking
+    mentions: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'Names, companies, projects, or topics mentioned (for linking related items)',
+    },
+
+    // Simple tags for search
     tags: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: '3-5 relevant tags for easy searching',
+      description: '2-4 searchable tags',
     },
-    entities: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          type: {
-            type: Type.STRING,
-            enum: ['person', 'company', 'date', 'location', 'project', 'email', 'phone', 'money'],
-          },
-          value: { type: Type.STRING },
-          confidence: { type: Type.NUMBER },
-        },
-        required: ['type', 'value', 'confidence'],
-      },
-      description: 'Extracted entities',
+
+    // Only if it's clearly business-related and needs routing
+    needsAction: {
+      type: Type.BOOLEAN,
+      description: 'True if this requires Vince to DO something (call, email, follow up). False for ideas, notes, reference.',
     },
-    suggestedActions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          type: {
-            type: Type.STRING,
-            enum: ['add_to_leadtrack', 'add_to_showsync', 'send_email', 'schedule_followup', 'create_task', 'add_to_calendar', 'research', 'call', 'none'],
-          },
-          label: { type: Type.STRING },
-          description: { type: Type.STRING },
-          priority: {
-            type: Type.STRING,
-            enum: ['high', 'medium', 'low'],
-          },
-        },
-        required: ['type', 'label', 'priority'],
-      },
-      description: 'Recommended next actions based on the content',
-    },
-    leadData: {
-      type: Type.OBJECT,
-      properties: {
-        name: { type: Type.STRING },
-        company: { type: Type.STRING },
-        email: { type: Type.STRING },
-        phone: { type: Type.STRING },
-        eventDate: { type: Type.STRING },
-        budget: { type: Type.STRING },
-      },
-      description: 'Structured lead data if this is a business lead',
-    },
-    showData: {
-      type: Type.OBJECT,
-      properties: {
-        client: { type: Type.STRING },
-        showType: { type: Type.STRING },
-        date: { type: Type.STRING },
-        venue: { type: Type.STRING },
-        fee: { type: Type.STRING },
-        status: { type: Type.STRING, enum: ['inquiry', 'quoted', 'confirmed', 'completed'] },
-      },
-      description: 'Structured show/booking data if this is performance-related',
-    },
-    taskData: {
-      type: Type.OBJECT,
-      properties: {
-        title: { type: Type.STRING },
-        dueDate: { type: Type.STRING },
-        priority: { type: Type.STRING, enum: ['low', 'medium', 'high'] },
-      },
-      description: 'Structured task data if this is an action item',
+    suggestedAction: {
+      type: Type.STRING,
+      description: 'If needsAction is true, what should Vince do? (e.g., "Call Sarah", "Send quote", "Follow up on Ryman")',
     },
   },
-  required: ['summary', 'category', 'context', 'tags', 'suggestedActions'],
+  required: ['response', 'summary', 'type', 'tags', 'needsAction'],
 };
+
+// Types for brain rules and memories
+interface BrainRules {
+  customRules?: string;
+  priorityKeywords?: {
+    high?: string[];
+    low?: string[];
+  };
+  defaults?: {
+    newLeadAction?: string;
+    showInquiryAction?: string;
+    followUpDays?: number;
+  };
+}
+
+interface BrainMemory {
+  id: string;
+  content: string;
+  createdAt: string;
+  source?: string;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { content, contentType } = req.body;
+  const { content, brainRules, brainMemories } = req.body as {
+    content: string;
+    brainRules?: BrainRules;
+    brainMemories?: BrainMemory[];
+  };
 
   if (!content) {
     return res.status(400).json({ error: 'Content is required' });
@@ -124,61 +106,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
+  // Build the rules and memory sections for the prompt
+  let rulesSection = '';
+  let memorySection = '';
+
+  if (brainRules?.customRules?.trim()) {
+    rulesSection = `\n\nUSER'S RULES:\n${brainRules.customRules}\n`;
+  }
+
+  if (brainMemories && brainMemories.length > 0) {
+    const memoryList = brainMemories.map(m => `• ${m.content}`).join('\n');
+    memorySection = `\n\nTHINGS TO REMEMBER:\n${memoryList}\n`;
+  }
+
+  // Get today's date for time calculations
+  const today = new Date().toISOString().split('T')[0];
+  const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `You are an AI assistant for a professional entertainer/performer who manages business leads and bookings. Analyze this content and suggest ACTIONS to take.
+    const prompt = `You are Brain, Vince's personal assistant. You're a smart note-taker with good recall and time-awareness.
 
-Content to analyze:
+TODAY: ${dayOfWeek}, ${today}
+${rulesSection}${memorySection}
+INPUT:
 """
 ${content}
 """
 
-Context: The user is Vince, a professional entertainer who:
-- Gets booking inquiries for performances (LuminaDrums, DJ Drums, drumline, karaoke, etc.)
-- Manages leads from venues, event planners, DMCs, and corporate clients
-- Needs to track shows, send quotes, follow up with leads
-- Uses LeadTrack for CRM and Show Sync for booking management
+YOUR JOB - BE A HELPFUL ASSISTANT:
 
-Instructions:
-1. Create a concise summary (1-2 sentences) focusing on what matters
-2. Determine the category:
-   - leads: Potential business contact, inquiry, or client (email addresses, companies reaching out)
-   - shows: Show/booking/performance related info (dates, venues, fees, confirmations)
-   - tasks: Action items, todos, follow-ups needed
-   - contacts: Contact information to save
-   - ideas: Creative thoughts, business ideas
-   - notes: General notes, observations
-   - reference: Documentation, guides, research
-   - quotes: Memorable quotes
-   - bookmarks: URLs to save
-   - meetings: Meeting schedules, agendas
-   - projects: Project info
-3. Determine if this is business or personal context
-4. Generate 3-5 searchable tags
-5. Extract entities (people, companies, dates, emails, phone numbers, money amounts)
+1. ACKNOWLEDGE CONVERSATIONALLY
+   - "Got it, I'll remind you Tuesday"
+   - "Saved that idea about wireless DMX"
+   - "Noted - call Sarah by 5pm"
+   - Keep it brief and natural, not formal
 
-MOST IMPORTANTLY - Suggest 1-3 specific ACTIONS the user should take:
-- add_to_leadtrack: Add this person/company to CRM (for new leads/contacts)
-- add_to_showsync: Add this show/booking to the calendar
-- send_email: Compose and send an email (for replies, quotes, follow-ups)
-- schedule_followup: Set a reminder to follow up later
-- create_task: Create a specific task/todo
-- add_to_calendar: Add a date/event to calendar
-- research: Look up more info about this company/person
-- call: Make a phone call
-- none: No action needed (just informational)
+2. EXTRACT TIME/DEADLINES (CRITICAL)
+   - "Call John by Tuesday" → dueDate = next Tuesday, reminderDate = Tuesday morning
+   - "Follow up next week" → dueDate = next Monday
+   - "Show on Feb 26" → dueDate = 2026-02-26
+   - "Eventually try this" → no deadline
+   - Convert relative dates to actual ISO dates based on today (${today})
 
-Prioritize actions as:
-- high: Needs immediate attention (hot lead, urgent request, time-sensitive)
-- medium: Should do soon (follow-up, add to system)
-- low: Nice to do when time permits
+3. IDENTIFY MENTIONS (for linking related items later)
+   - People names: "Sarah", "John from Marriott"
+   - Companies: "Ryman", "Marriott"
+   - Projects/shows: "the corporate gig", "holiday show concept"
+   - Topics: "wireless DMX", "drumline pricing"
 
-If this looks like a business lead or inquiry, ALWAYS suggest "add_to_leadtrack" as a high priority action.
-If this mentions a show date or booking, suggest "add_to_showsync".
-If this requires a response, suggest "send_email".
+4. SIMPLE TYPE (don't overthink):
+   - task: Something to DO ("call", "send", "follow up", "schedule")
+   - reminder: Time-based alert ("remind me", "don't forget", "by Tuesday")
+   - idea: Creative thought, concept, "what if", brainstorm
+   - note: General info, observation, thought
+   - contact: Person/company info
+   - show: Show/gig/event related
+   - lead: Business opportunity, inquiry
+   - reference: Info to save for later lookup
 
-Return structured JSON with all fields including suggestedActions.`;
+5. DOES THIS NEED ACTION?
+   - needsAction: true if Vince needs to DO something
+   - needsAction: false for ideas, notes, reference, FYI stuff
+
+CONTEXT: Vince is an entertainer (LuminaDrums, DJ Drums, drumline). He gets inquiries from venues, event planners, corporate clients. He captures ideas, tasks, reminders, show concepts, people to call, random thoughts.
+
+Be conversational, not formal. You're taking notes for a friend, not filing reports.
+
+Return structured JSON.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -186,25 +182,86 @@ Return structured JSON with all fields including suggestedActions.`;
       config: {
         responseMimeType: 'application/json',
         responseSchema: responseSchema,
-        temperature: 0.3,
+        temperature: 0.4,
       },
     });
 
     const result = JSON.parse(response.text || '{}');
 
+    // Map to response format with backward compatibility
     return res.status(200).json({
+      // New conversational fields
+      response: result.response || 'Got it',
       summary: result.summary || content.slice(0, 200),
-      category: result.category || 'notes',
-      context: result.context || 'personal',
+      type: result.type || 'note',
+      dueDate: result.dueDate || null,
+      reminderDate: result.reminderDate || null,
+      timeContext: result.timeContext || null,
+      mentions: result.mentions || [],
       tags: result.tags || [],
-      entities: result.entities || [],
-      suggestedActions: result.suggestedActions || [],
-      leadData: result.leadData,
-      showData: result.showData,
-      taskData: result.taskData,
+      needsAction: result.needsAction || false,
+      suggestedAction: result.suggestedAction || null,
+
+      // Backward compatibility - map to old fields
+      category: mapTypeToCategory(result.type),
+      context: 'business',
+      urgency: result.needsAction ? (result.dueDate ? 'today' : 'when_available') : 'fyi',
+      destination: mapTypeToDestination(result.type),
+      intentType: mapTypeToIntent(result.type),
+      primaryAction: result.needsAction && result.suggestedAction ? {
+        type: 'create_task',
+        label: result.suggestedAction,
+      } : { type: 'none', label: 'No action needed' },
+      entities: extractMentionsAsEntities(result.mentions || []),
     });
   } catch (error) {
     console.error('Gemini API error:', error);
     return res.status(500).json({ error: 'Failed to process content' });
   }
+}
+
+// Map simple type to legacy category
+function mapTypeToCategory(type: string): string {
+  const map: Record<string, string> = {
+    task: 'tasks',
+    reminder: 'tasks',
+    idea: 'ideas',
+    note: 'notes',
+    contact: 'contacts',
+    show: 'shows',
+    lead: 'leads',
+    reference: 'reference',
+  };
+  return map[type] || 'notes';
+}
+
+// Map type to destination
+function mapTypeToDestination(type: string): string {
+  if (type === 'lead' || type === 'contact') return 'leadtrack';
+  if (type === 'show') return 'showsync';
+  return 'archive';
+}
+
+// Map type to intent
+function mapTypeToIntent(type: string): string {
+  const map: Record<string, string> = {
+    task: 'task',
+    reminder: 'task',
+    idea: 'idea',
+    note: 'general',
+    contact: 'performer_offer',
+    show: 'show_inquiry',
+    lead: 'new_lead',
+    reference: 'reference',
+  };
+  return map[type] || 'general';
+}
+
+// Extract mentions as entities for backward compat
+function extractMentionsAsEntities(mentions: string[]): Array<{type: string; value: string; confidence: number}> {
+  return mentions.map(mention => ({
+    type: 'person', // simplified - could be smarter
+    value: mention,
+    confidence: 0.8,
+  }));
 }

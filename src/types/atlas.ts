@@ -2,8 +2,8 @@ export type Category =
   | 'ideas'
   | 'tasks'
   | 'contacts'
-  | 'leads'      // New: potential business leads
-  | 'shows'      // New: show/booking related
+  | 'leads'
+  | 'shows'
   | 'notes'
   | 'reference'
   | 'quotes'
@@ -14,6 +14,51 @@ export type Category =
 export type ContentType = 'text' | 'url' | 'image' | 'voice';
 
 export type CaptureContext = 'business' | 'personal';
+
+// NEW: Action-focused routing
+export type Destination = 'leadtrack' | 'showsync' | 'both' | 'archive' | 'none';
+
+export type Urgency = 'immediate' | 'today' | 'this_week' | 'when_available' | 'fyi';
+
+export type IntentType =
+  | 'new_lead'
+  | 'lead_followup'
+  | 'show_inquiry'
+  | 'show_confirmation'
+  | 'show_logistics'
+  | 'contract'
+  | 'invoice_payment'
+  | 'performer_offer'
+  | 'task'
+  | 'reference'
+  | 'idea'
+  | 'general';
+
+export type AlertType = 'conflict' | 'opportunity' | 'risk' | 'reminder';
+
+export interface Alert {
+  type: AlertType;
+  message: string;
+}
+
+export interface PrimaryAction {
+  type: 'add_to_leadtrack' | 'add_to_showsync' | 'send_email' | 'send_quote' | 'confirm_show' | 'follow_up' | 'call' | 'research' | 'create_task' | 'archive' | 'none';
+  label: string;
+  description?: string;
+}
+
+export interface ExtractedData {
+  contactName?: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  eventType?: string;
+  eventDate?: string;
+  venue?: string;
+  budget?: string;
+  fee?: string;
+  status?: 'inquiry' | 'quoted' | 'pending' | 'confirmed' | 'completed';
+}
 
 export interface Entity {
   type: 'person' | 'company' | 'date' | 'location' | 'project' | 'email' | 'phone' | 'money';
@@ -62,6 +107,9 @@ export interface SuggestedAction {
   data?: Record<string, string>; // Pre-filled data for the action
 }
 
+// Simple type for the new conversational Brain
+export type SimpleType = 'task' | 'reminder' | 'idea' | 'note' | 'contact' | 'show' | 'lead' | 'reference';
+
 export interface Capture {
   id: string;
   userId: string;
@@ -70,14 +118,34 @@ export interface Capture {
   rawContent: string;
   contentType: ContentType;
 
-  // AI-Generated
+  // NEW: Conversational Brain fields
+  response?: string;           // Brain's conversational acknowledgment
+  simpleType?: SimpleType;     // Simple type (task, idea, note, etc.)
+  dueDate?: string | null;     // ISO date if there's a deadline
+  reminderDate?: string | null; // ISO date when to remind
+  timeContext?: string | null;  // Human-readable time ("by Tuesday", "next week")
+  mentions?: string[];          // People, companies, topics mentioned
+  needsAction?: boolean;        // Does this require action?
+  suggestedAction?: string | null; // What to do ("Call Sarah", "Send quote")
+
+  // AI-Generated (legacy - kept for backward compat)
   summary: string;
   category: Category;
   tags: string[];
   entities: Entity[];
   context: CaptureContext;
 
-  // AI-Suggested actions
+  // Legacy action-focused fields (backward compat)
+  urgency?: Urgency;
+  destination?: Destination;
+  destinationReason?: string;
+  intentType?: IntentType;
+  extractedData?: ExtractedData;
+  primaryAction?: PrimaryAction;
+  secondaryActions?: Array<{ type: string; label: string }>;
+  alerts?: Alert[];
+
+  // Legacy AI-Suggested actions (for backward compat)
   suggestedActions?: SuggestedAction[];
 
   // Structured data (populated based on category)

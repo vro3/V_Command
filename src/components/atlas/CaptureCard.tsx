@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
-  Copy, Trash2, ExternalLink, MoreHorizontal, UserPlus, Calendar,
-  CheckCircle2, Briefcase, Edit3, RefreshCw, X, Check, Mail, Phone,
-  ArrowRight, Clock, Target
+  Copy, Trash2, MoreHorizontal, UserPlus, Calendar,
+  CheckCircle2, Edit3, RefreshCw, X, Check, Clock,
+  Lightbulb, FileText, User, Target, BookOpen, CheckSquare
 } from 'lucide-react';
-import { Capture, CATEGORY_INFO, SuggestedAction } from '../../types/atlas';
+import { Capture, SimpleType } from '../../types/atlas';
 
 interface CaptureCardProps {
   capture: Capture;
@@ -13,7 +13,7 @@ interface CaptureCardProps {
   onReprocess?: (id: string) => void;
   onCopy?: (content: string) => void;
   onAddToLeadTrack?: (capture: Capture) => void;
-  onAction?: (capture: Capture, action: SuggestedAction) => void;
+  onResearch?: (query: string) => void;
   compact?: boolean;
 }
 
@@ -34,17 +34,51 @@ function formatDate(dateString: string): string {
   }
 }
 
-function getActionIcon(type: SuggestedAction['type']) {
+// Format due date relative to today
+function formatDueDate(dueDate: string | null | undefined): string | null {
+  if (!dueDate) return null;
+
+  const due = new Date(dueDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor((due.getTime() - today.getTime()) / 86400000);
+
+  if (diffDays < 0) return 'Overdue';
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays < 7) return due.toLocaleDateString([], { weekday: 'short' });
+  return due.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+// Get icon for simple type
+function getTypeIcon(type: SimpleType | undefined) {
   switch (type) {
-    case 'add_to_leadtrack': return UserPlus;
-    case 'add_to_showsync': return Calendar;
-    case 'send_email': return Mail;
-    case 'call': return Phone;
-    case 'schedule_followup': return Clock;
-    case 'create_task': return CheckCircle2;
-    case 'add_to_calendar': return Calendar;
-    case 'research': return Target;
-    default: return ArrowRight;
+    case 'task': return CheckSquare;
+    case 'reminder': return Clock;
+    case 'idea': return Lightbulb;
+    case 'note': return FileText;
+    case 'contact': return User;
+    case 'show': return Calendar;
+    case 'lead': return Target;
+    case 'reference': return BookOpen;
+    default: return FileText;
+  }
+}
+
+// Get styling for simple type
+function getTypeStyle(type: SimpleType | undefined) {
+  switch (type) {
+    case 'task': return { color: 'text-blue-400', bg: 'bg-blue-500/10' };
+    case 'reminder': return { color: 'text-orange-400', bg: 'bg-orange-500/10' };
+    case 'idea': return { color: 'text-purple-400', bg: 'bg-purple-500/10' };
+    case 'note': return { color: 'text-slate-400', bg: 'bg-slate-500/10' };
+    case 'contact': return { color: 'text-green-400', bg: 'bg-green-500/10' };
+    case 'show': return { color: 'text-emerald-400', bg: 'bg-emerald-500/10' };
+    case 'lead': return { color: 'text-accent', bg: 'bg-accent/10' };
+    case 'reference': return { color: 'text-cyan-400', bg: 'bg-cyan-500/10' };
+    default: return { color: 'text-slate-400', bg: 'bg-slate-500/10' };
   }
 }
 
@@ -55,7 +89,6 @@ export function CaptureCard({
   onReprocess,
   onCopy,
   onAddToLeadTrack,
-  onAction,
   compact = false
 }: CaptureCardProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -63,15 +96,15 @@ export function CaptureCard({
   const [showMenu, setShowMenu] = useState(false);
   const [isReprocessing, setIsReprocessing] = useState(false);
 
-  const categoryInfo = CATEGORY_INFO[capture.category];
+  const TypeIcon = getTypeIcon(capture.simpleType);
+  const typeStyle = getTypeStyle(capture.simpleType);
+  const dueDateFormatted = formatDueDate(capture.dueDate);
+  const isOverdue = dueDateFormatted === 'Overdue';
+  const isDueToday = dueDateFormatted === 'Today';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(capture.rawContent);
     onCopy?.(capture.rawContent);
-  };
-
-  const handleAddToLeadTrack = () => {
-    onAddToLeadTrack?.(capture);
   };
 
   const handleSaveEdit = () => {
@@ -93,14 +126,15 @@ export function CaptureCard({
     setIsReprocessing(false);
   };
 
-  const handleAction = (action: SuggestedAction) => {
-    onAction?.(capture, action);
-  };
-
-  // Compact view for sidebar
+  // Compact view for sidebar - conversational style
   if (compact) {
     return (
-      <div className="bg-slate-900/50 border border-slate-800 btn-squircle p-3 hover:border-slate-700 transition-colors group relative">
+      <div className={`bg-slate-900/50 border btn-squircle p-3 hover:border-slate-700 transition-colors group relative ${
+        isOverdue ? 'border-red-500/30' :
+        isDueToday ? 'border-orange-500/20' :
+        capture.needsAction ? 'border-accent/20' :
+        'border-slate-800'
+      }`}>
         {/* Edit mode */}
         {isEditing ? (
           <div className="space-y-2">
@@ -130,13 +164,22 @@ export function CaptureCard({
           </div>
         ) : (
           <>
-            <div className="flex items-start justify-between gap-2 mb-1.5">
+            {/* Header: Type icon + Due date + Menu */}
+            <div className="flex items-center justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-1.5">
-                <span className={`text-[10px] font-medium uppercase tracking-wider ${categoryInfo.color}`}>
-                  {categoryInfo.label}
+                {/* Type icon */}
+                <span className={`p-1 rounded ${typeStyle.bg}`}>
+                  <TypeIcon className={`w-3 h-3 ${typeStyle.color}`} />
                 </span>
-                {capture.context === 'business' && (
-                  <Briefcase className="w-3 h-3 text-accent" />
+                {/* Due date badge */}
+                {dueDateFormatted && (
+                  <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
+                    isOverdue ? 'bg-red-500/20 text-red-400' :
+                    isDueToday ? 'bg-orange-500/20 text-orange-400' :
+                    'bg-slate-700 text-slate-400'
+                  }`}>
+                    {dueDateFormatted}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-1">
@@ -194,38 +237,59 @@ export function CaptureCard({
                 </div>
               </div>
             </div>
+
+            {/* Brain's response - conversational */}
+            {capture.response && (
+              <p className="text-[11px] text-slate-500 italic mb-1">
+                {capture.response}
+              </p>
+            )}
+
+            {/* Summary */}
             <p className="text-[12px] text-slate-300 line-clamp-2">{capture.summary}</p>
 
-            {/* Suggested Actions */}
-            {capture.suggestedActions && capture.suggestedActions.length > 0 && !capture.actionTaken && (
-              <div className="mt-2 space-y-1">
-                {capture.suggestedActions.slice(0, 2).map((action, idx) => {
-                  const Icon = getActionIcon(action.type);
-                  return (
-                    <button
-                      key={idx}
-                      onClick={(e) => { e.stopPropagation(); handleAction(action); }}
-                      className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-medium rounded-lg transition-colors ${
-                        action.priority === 'high'
-                          ? 'bg-accent/10 text-accent hover:bg-accent/20 border border-accent/20'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
-                      }`}
-                    >
-                      <Icon className="w-3 h-3" />
-                      {action.label}
-                    </button>
-                  );
-                })}
+            {/* Time context */}
+            {capture.timeContext && capture.timeContext !== 'no deadline' && !dueDateFormatted && (
+              <p className="text-[10px] text-slate-500 mt-1">
+                <Clock className="w-3 h-3 inline mr-1" />
+                {capture.timeContext}
+              </p>
+            )}
+
+            {/* Mentions - for context linking */}
+            {capture.mentions && capture.mentions.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {capture.mentions.slice(0, 3).map((mention, idx) => (
+                  <span
+                    key={idx}
+                    className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded"
+                  >
+                    {mention}
+                  </span>
+                ))}
               </div>
             )}
 
-            {/* Legacy: Quick actions for leads in compact view */}
-            {capture.category === 'leads' && !capture.actionTaken && !capture.suggestedActions?.length && onAddToLeadTrack && (
+            {/* Action needed */}
+            {capture.needsAction && capture.suggestedAction && !capture.actionTaken && (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddToLeadTrack();
-                }}
+                onClick={() => onAddToLeadTrack?.(capture)}
+                className={`mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg transition-colors ${
+                  isOverdue
+                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                    : isDueToday
+                    ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                    : 'bg-accent/10 text-accent hover:bg-accent/20'
+                }`}
+              >
+                {capture.suggestedAction}
+              </button>
+            )}
+
+            {/* Legacy: Quick action for leads */}
+            {capture.simpleType === 'lead' && !capture.actionTaken && onAddToLeadTrack && !capture.suggestedAction && (
+              <button
+                onClick={() => onAddToLeadTrack(capture)}
                 className="mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-1.5 bg-accent/10 text-accent text-[10px] font-medium rounded-lg hover:bg-accent/20 transition-colors"
               >
                 <UserPlus className="w-3 h-3" />
@@ -245,24 +309,26 @@ export function CaptureCard({
     );
   }
 
-  // Full card view
+  // Full card view - conversational style
   return (
-    <div className="bg-slate-900/50 border border-slate-800 card-squircle p-4 hover:border-slate-700 transition-colors group">
+    <div className={`bg-slate-900/50 border card-squircle p-4 hover:border-slate-700 transition-colors group ${
+      isOverdue ? 'border-red-500/30' :
+      isDueToday ? 'border-orange-500/20' :
+      'border-slate-800'
+    }`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
-          <span className={`text-[11px] font-medium uppercase tracking-wider ${categoryInfo.color}`}>
-            {categoryInfo.label}
+          <span className={`p-1.5 rounded-lg ${typeStyle.bg}`}>
+            <TypeIcon className={`w-4 h-4 ${typeStyle.color}`} />
           </span>
-          {capture.context === 'business' && (
-            <span className="text-[10px] text-accent bg-accent/10 px-1.5 py-0.5 rounded flex items-center gap-1">
-              <Briefcase className="w-3 h-3" />
-              Business
-            </span>
-          )}
-          {capture.contentType === 'url' && (
-            <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-1.5 py-0.5 rounded">
-              Link
+          {dueDateFormatted && (
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
+              isOverdue ? 'bg-red-500/20 text-red-400' :
+              isDueToday ? 'bg-orange-500/20 text-orange-400' :
+              'bg-slate-700 text-slate-400'
+            }`}>
+              {dueDateFormatted}
             </span>
           )}
         </div>
@@ -271,223 +337,79 @@ export function CaptureCard({
         </span>
       </div>
 
-      {/* Edit mode */}
-      {isEditing ? (
-        <div className="mb-3 space-y-2">
-          <textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="w-full p-3 text-[13px] bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
-            rows={4}
-            autoFocus
-          />
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSaveEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-slate-950 text-[12px] font-medium rounded-lg hover:bg-accent-hover"
-            >
-              <Check className="w-3.5 h-3.5" />
-              Save & Reprocess
-            </button>
-            <button
-              onClick={handleCancelEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 text-slate-300 text-[12px] font-medium rounded-lg hover:bg-slate-600"
-            >
-              <X className="w-3.5 h-3.5" />
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Summary */}
-          <p className="text-[13px] text-slate-200 mb-3 leading-relaxed">
-            {capture.summary}
-          </p>
-
-          {/* Suggested Actions */}
-          {capture.suggestedActions && capture.suggestedActions.length > 0 && !capture.actionTaken && (
-            <div className="mb-3 p-3 bg-slate-800/50 rounded-lg">
-              <p className="text-[10px] font-semibold text-accent uppercase tracking-wider mb-2">
-                Suggested Actions
-              </p>
-              <div className="space-y-2">
-                {capture.suggestedActions.map((action, idx) => {
-                  const Icon = getActionIcon(action.type);
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => handleAction(action)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-[12px] font-medium rounded-lg transition-colors text-left ${
-                        action.priority === 'high'
-                          ? 'bg-accent text-slate-950 hover:bg-accent-hover'
-                          : action.priority === 'medium'
-                          ? 'bg-accent/10 text-accent hover:bg-accent/20 border border-accent/20'
-                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <span>{action.label}</span>
-                        {action.description && (
-                          <p className={`text-[10px] mt-0.5 truncate ${
-                            action.priority === 'high' ? 'text-slate-950/70' : 'text-slate-400'
-                          }`}>
-                            {action.description}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </>
+      {/* Brain's response */}
+      {capture.response && (
+        <p className="text-[12px] text-slate-500 italic mb-2">
+          "{capture.response}"
+        </p>
       )}
 
-      {/* Lead Data Display */}
-      {capture.category === 'leads' && capture.leadData && !isEditing && (
-        <div className="mb-3 p-2.5 bg-slate-800/50 rounded-lg space-y-1.5">
-          <p className="text-[10px] font-semibold text-accent uppercase tracking-wider">Lead Details</p>
-          {capture.leadData.company && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Company:</span> {capture.leadData.company}
-            </p>
-          )}
-          {capture.leadData.name && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Contact:</span> {capture.leadData.name}
-            </p>
-          )}
-          {capture.leadData.email && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Email:</span> {capture.leadData.email}
-            </p>
-          )}
-          {capture.leadData.eventDate && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Event Date:</span> {capture.leadData.eventDate}
-            </p>
-          )}
-          {capture.leadData.budget && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Budget:</span> {capture.leadData.budget}
-            </p>
-          )}
+      {/* Summary */}
+      <p className="text-[13px] text-slate-200 mb-3 leading-relaxed">
+        {capture.summary}
+      </p>
+
+      {/* Time context */}
+      {capture.timeContext && capture.timeContext !== 'no deadline' && (
+        <div className="flex items-center gap-1.5 text-[12px] text-slate-500 mb-3">
+          <Clock className="w-3.5 h-3.5" />
+          {capture.timeContext}
         </div>
       )}
 
-      {/* Show Data Display */}
-      {capture.category === 'shows' && capture.showData && !isEditing && (
-        <div className="mb-3 p-2.5 bg-slate-800/50 rounded-lg space-y-1.5">
-          <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Show Details</p>
-          {capture.showData.client && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Client:</span> {capture.showData.client}
-            </p>
-          )}
-          {capture.showData.showType && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Show:</span> {capture.showData.showType}
-            </p>
-          )}
-          {capture.showData.date && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Date:</span> {capture.showData.date}
-            </p>
-          )}
-          {capture.showData.fee && (
-            <p className="text-[12px] text-slate-300">
-              <span className="text-slate-500">Fee:</span> {capture.showData.fee}
-            </p>
-          )}
-          {capture.showData.status && (
-            <p className="text-[12px]">
-              <span className="text-slate-500">Status:</span>{' '}
-              <span className={
-                capture.showData.status === 'confirmed' ? 'text-emerald-400' :
-                capture.showData.status === 'quoted' ? 'text-amber-400' :
-                capture.showData.status === 'completed' ? 'text-blue-400' :
-                'text-slate-400'
-              }>
-                {capture.showData.status.charAt(0).toUpperCase() + capture.showData.status.slice(1)}
-              </span>
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Task Data Display */}
-      {capture.category === 'tasks' && capture.taskData && !isEditing && (
-        <div className="mb-3 p-2.5 bg-slate-800/50 rounded-lg space-y-1.5">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider">Task</p>
-            {capture.taskData.priority && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                capture.taskData.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                capture.taskData.priority === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                'bg-slate-700 text-slate-400'
-              }`}>
-                {capture.taskData.priority.toUpperCase()}
-              </span>
-            )}
-          </div>
-          {capture.taskData.dueDate && (
-            <p className="text-[12px] text-slate-300 flex items-center gap-1.5">
-              <Calendar className="w-3 h-3 text-slate-500" />
-              Due: {capture.taskData.dueDate}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Tags */}
-      {capture.tags.length > 0 && !isEditing && (
+      {/* Mentions */}
+      {capture.mentions && capture.mentions.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {capture.tags.map((tag) => (
+          {capture.mentions.map((mention, idx) => (
             <span
-              key={tag}
-              className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 btn-squircle"
+              key={idx}
+              className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded"
             >
-              {tag}
+              {mention}
             </span>
           ))}
         </div>
       )}
 
-      {/* Source URL */}
-      {capture.source && !isEditing && (
-        <a
-          href={capture.source}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-cyan-400 transition-colors mb-3 truncate"
-        >
-          <ExternalLink className="w-3 h-3 flex-shrink-0" />
-          <span className="truncate">{capture.source}</span>
-        </a>
-      )}
-
-      {/* Legacy: Quick Action for Leads */}
-      {capture.category === 'leads' && !capture.actionTaken && !capture.suggestedActions?.length && onAddToLeadTrack && !isEditing && (
-        <button
-          onClick={handleAddToLeadTrack}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-accent text-slate-950 text-[12px] font-semibold rounded-lg hover:bg-accent-hover transition-colors"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add to LeadTrack
-        </button>
-      )}
-
-      {capture.actionTaken === 'added_to_leadtrack' && !isEditing && (
-        <div className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-emerald-500/10 text-emerald-400 text-[12px] font-medium rounded-lg">
-          <CheckCircle2 className="w-4 h-4" />
-          Added to LeadTrack
+      {/* Tags */}
+      {capture.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {capture.tags.map((tag) => (
+            <span
+              key={tag}
+              className="text-[10px] bg-slate-800/50 text-slate-500 px-2 py-0.5 btn-squircle"
+            >
+              #{tag}
+            </span>
+          ))}
         </div>
       )}
 
-      {/* Actions */}
+      {/* Action */}
+      {capture.needsAction && capture.suggestedAction && !capture.actionTaken && (
+        <button
+          onClick={() => onAddToLeadTrack?.(capture)}
+          className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 mb-3 text-[13px] font-medium rounded-lg transition-colors ${
+            isOverdue
+              ? 'bg-red-500 text-white hover:bg-red-600'
+              : isDueToday
+              ? 'bg-orange-500 text-white hover:bg-orange-600'
+              : 'bg-accent text-slate-950 hover:bg-accent-hover'
+          }`}
+        >
+          {capture.suggestedAction}
+        </button>
+      )}
+
+      {/* Action Taken */}
+      {capture.actionTaken && (
+        <div className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-emerald-500/10 text-emerald-400 text-[12px] font-medium rounded-lg">
+          <CheckCircle2 className="w-4 h-4" />
+          Done
+        </div>
+      )}
+
+      {/* Footer Actions */}
       {!isEditing && (
         <div className="flex items-center justify-between pt-3 border-t border-slate-800/50">
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
